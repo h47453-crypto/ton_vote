@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>청룡시리즈 OST 투표 트래커</title>
+    <!-- 📊 그래프를 그리기 위한 Chart.js 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -90,6 +91,9 @@
             font-size: 12px;
             margin-top: 10px;
             width: 100%;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
         }
         .result-card {
             background: #ebf8ff;
@@ -121,7 +125,6 @@
             border-top: 2px solid #e2e8f0;
             padding-top: 15px;
         }
-        /* 📈 그래프 영역 스타일 */
         .chart-container {
             position: relative;
             height: 250px;
@@ -140,13 +143,32 @@
             border-radius: 8px;
             margin-bottom: 10px;
             font-size: 13px;
+            position: relative;
+        }
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 5px;
+            margin-bottom: 8px;
         }
         .log-time {
             color: #718096;
             font-size: 11px;
-            margin-bottom: 8px;
-            border-bottom: 1px dashed #e2e8f0;
-            padding-bottom: 5px;
+        }
+        .btn-delete-single {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            font-size: 11px;
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .btn-delete-single:hover {
+            background-color: #fed7d7;
         }
         .log-detail {
             display: flex;
@@ -160,6 +182,7 @@
 <div class="container">
     <h1>🏆 OST 투표 트래커<br><small>(1위 만점 기준)</small></h1>
     
+    <!-- 예선 입력 (고정값) -->
     <div class="section">
         <div class="section-title">1. 예선 투표 결과 (고정)</div>
         <div class="grid-2">
@@ -174,6 +197,7 @@
         </div>
     </div>
 
+    <!-- 본선 입력 -->
     <div class="section">
         <div class="section-title">2. 본선 투표 현황 입력</div>
         <div class="grid-2">
@@ -189,6 +213,7 @@
         <button class="btn" onclick="calculateAndLog()">계산 및 시간 기록하기</button>
     </div>
 
+    <!-- 결과 화면 -->
     <div class="result-card">
         <div class="result-title">💡 방식 A (구간별 1위 만점 환산)</div>
         <div class="score-line">
@@ -211,16 +236,19 @@
         </div>
     </div>
 
+    <!-- 타임스탬프 기록장 및 차트 -->
     <div class="log-container">
         <div class="section-title">🕒 실시간 추세 및 기록장</div>
         
+        <!-- 📈 그래프 영역 -->
         <div class="chart-container">
             <canvas id="voteChart"></canvas>
         </div>
 
         <div id="logList">
-            </div>
-        <button class="btn btn-clear" onclick="clearLogs()">기록 전체 삭제</button>
+            <!-- 기록이 여기에 쌓입니다 -->
+        </div>
+        <button class="btn btn-clear" onclick="clearLogs()">전체 기록 싹 지우기 (초기화)</button>
     </div>
 </div>
 
@@ -230,7 +258,7 @@ document.getElementById('final_v1').addEventListener('input', updateScoresOnly);
 document.getElementById('final_v2').addEventListener('input', updateScoresOnly);
 
 let currentResult = {};
-let voteChart = null; // 차트 변수 선언
+let voteChart = null;
 
 // 계산만 수행
 function updateScoresOnly() {
@@ -287,7 +315,6 @@ function calculateAndLog() {
     updateScoresOnly(); 
     
     const now = new Date();
-    // 시:분:초만 추출해서 차트 라벨로도 쓰기 편하게 만듦
     const timeOnly = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
     const timeString = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ` + timeOnly;
 
@@ -300,11 +327,22 @@ function calculateAndLog() {
     let logs = JSON.parse(localStorage.getItem('ostVoteLogs')) || [];
     logs.unshift(newLog); 
     
-    if(logs.length > 30) logs.pop();
+    if(logs.length > 50) logs.pop(); // 최대 50개까지 보관
 
     localStorage.setItem('ostVoteLogs', JSON.stringify(logs));
     renderLogs();
-    renderChart(); // 로그 기록 후 차트도 업데이트
+    renderChart();
+}
+
+// 개별 로그 삭제 함수 (새로 추가됨!)
+function deleteSingleLog(index) {
+    if(confirm("이 기록을 삭제하시겠습니까? (그래프에서도 지워집니다)")) {
+        let logs = JSON.parse(localStorage.getItem('ostVoteLogs')) || [];
+        logs.splice(index, 1); // 선택한 기록 하나만 잘라내기
+        localStorage.setItem('ostVoteLogs', JSON.stringify(logs));
+        renderLogs(); // 목록 다시 그리기
+        renderChart(); // 그래프 다시 그리기
+    }
 }
 
 // 로그 화면에 그리기
@@ -318,11 +356,14 @@ function renderLogs() {
         return;
     }
 
-    logs.forEach(log => {
+    logs.forEach((log, index) => {
         const div = document.createElement('div');
         div.className = 'log-item';
         div.innerHTML = `
-            <div class="log-time">${log.time}</div>
+            <div class="log-header">
+                <span class="log-time">${log.time}</span>
+                <button class="btn-delete-single" onclick="deleteSingleLog(${index})">❌ 삭제</button>
+            </div>
             <div class="log-detail" style="color: #4a5568;">
                 <span>📊 본선표 차이:</span>
                 <strong>${log.final_diff} 표</strong>
@@ -343,11 +384,10 @@ function renderLogs() {
     });
 }
 
-// 📈 차트 그리기 함수
+// 📈 차트 그리기
 function renderChart() {
     let logs = JSON.parse(localStorage.getItem('ostVoteLogs')) || [];
     
-    // 기록이 없으면 차트 초기화 후 종료
     if (logs.length === 0) {
         if (voteChart) {
             voteChart.destroy();
@@ -356,24 +396,20 @@ function renderChart() {
         return;
     }
 
-    // 차트는 왼쪽에서 오른쪽으로 (과거->최신) 흘러가야 하므로 배열 순서를 뒤집음
     let chartData = [...logs].reverse();
 
-    // 차트에 들어갈 라벨(시간)과 데이터(득표수) 추출
-    // 콤마(,)가 포함된 문자열을 다시 숫자로 변환
     let labels = chartData.map(log => log.shortTime);
     let dataA = chartData.map(log => parseFloat(log.final_v1.replace(/,/g, '')));
     let dataB = chartData.map(log => parseFloat(log.final_v2.replace(/,/g, '')));
 
     const ctx = document.getElementById('voteChart').getContext('2d');
     
-    // 이미 그려진 차트가 있으면 지우고 새로 그림
     if (voteChart) {
         voteChart.destroy();
     }
 
     voteChart = new Chart(ctx, {
-        type: 'line', // 선 그래프
+        type: 'line',
         data: {
             labels: labels,
             datasets: [
@@ -382,7 +418,7 @@ function renderChart() {
                     data: dataA,
                     borderColor: '#3182ce',
                     backgroundColor: '#3182ce',
-                    tension: 0.1, // 선의 휘어짐 정도 (0은 직선)
+                    tension: 0.1,
                     borderWidth: 2
                 },
                 {
@@ -400,7 +436,7 @@ function renderChart() {
             maintainAspectRatio: false,
             scales: {
                 y: {
-                    beginAtZero: false // 득표수 격차가 작을 때 0부터 시작하면 차이가 안 보여서 false로 설정
+                    beginAtZero: false
                 }
             },
             plugins: {
@@ -414,10 +450,10 @@ function renderChart() {
 
 // 로그 전체 삭제
 function clearLogs() {
-    if(confirm("모든 기록을 삭제하시겠습니까?")) {
+    if(confirm("모든 기록을 완전히 지우시겠습니까?")) {
         localStorage.removeItem('ostVoteLogs');
         renderLogs();
-        renderChart(); // 차트도 같이 삭제
+        renderChart(); 
     }
 }
 
@@ -425,7 +461,7 @@ function clearLogs() {
 window.onload = function() {
     updateScoresOnly();
     renderLogs();
-    renderChart(); // 저장된 기록으로 차트 그림
+    renderChart();
 };
 </script>
 </body>
