@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>청룡시리즈 OST 투표 트래커</title>
+    <style>
+        body {
+            font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        h1 {
+            text-align: center;
+            font-size: 20px;
+            color: #1a365d;
+            margin-bottom: 20px;
+        }
+        .section {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #e2e8f0;
+        }
+        .section-title {
+            font-weight: bold;
+            font-size: 15px;
+            color: #2b6cb0;
+            margin-bottom: 10px;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        label {
+            font-size: 13px;
+            color: #4a5568;
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+        input {
+            width: 85%;
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 15px;
+            text-align: right;
+            background-color: #fff;
+        }
+        .input-readonly {
+            background-color: #edf2f7;
+            color: #718096;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background-color: #3182ce;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background-color: #2b6cb0;
+        }
+        .btn-clear {
+            background-color: #e2e8f0;
+            color: #4a5568;
+            padding: 8px;
+            font-size: 12px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .result-card {
+            background: #ebf8ff;
+            border: 1px solid #bee3f8;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+        .result-title {
+            font-weight: bold;
+            color: #2b6cb0;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #ebd8ff;
+            padding-bottom: 5px;
+        }
+        .score-line {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 15px;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #e53e3e;
+            font-size: 16px;
+        }
+        /* 로그(기록) 섹션 스타일 */
+        .log-container {
+            margin-top: 25px;
+            border-top: 2px solid #e2e8f0;
+            padding-top: 15px;
+        }
+        .log-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+        .log-time {
+            color: #718096;
+            font-size: 11px;
+            margin-bottom: 5px;
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏆 OST 투표 트래커<br><small>(1위 만점 기준)</small></h1>
+    
+    <div class="section">
+        <div class="section-title">1. 예선 투표 결과 (고정)</div>
+        <div class="grid-2">
+            <div>
+                <label>후보 A (예선 1위)</label>
+                <input type="number" id="pre_v1" value="38808" class="input-readonly" readonly>
+            </div>
+            <div>
+                <label>후보 B (예선 2위)</label>
+                <input type="number" id="pre_v2" value="6619" class="input-readonly" readonly>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">2. 본선 투표 현황 입력</div>
+        <div class="grid-2">
+            <div>
+                <label>후보 A 본선 득표수</label>
+                <input type="number" id="final_v1" value="0" placeholder="득표수 입력">
+            </div>
+            <div>
+                <label>후보 B 본선 득표수</label>
+                <input type="number" id="final_v2" value="0" placeholder="득표수 입력">
+            </div>
+        </div>
+        <button class="btn" onclick="calculateAndLog()">계산 및 시간 기록하기</button>
+    </div>
+
+    <div class="result-card">
+        <div class="result-title">💡 방식 A (구간별 1위 만점 환산)</div>
+        <div class="score-line">
+            <span>후보 A: <span id="a_score1">0.000</span> 점 / 후보 B: <span id="a_score2">0.000</span> 점</span>
+        </div>
+        <div class="score-line" style="border-top: 1px dashed #bee3f8; padding-top: 5px;">
+            <strong>두 후보 점수 차이 (80점 만점):</strong>
+            <strong id="a_diff" style="color: #2b6cb0;">0.000 점</strong>
+        </div>
+    </div>
+
+    <div class="result-card" style="background: #f0fff4; border-color: #c6f6d5;">
+        <div class="result-title" style="color: #22543d;">⚠️ 방식 B (전체 가중 득표수 기준 1위 만점)</div>
+        <div class="score-line" style="font-size: 13px; color: #4a5568;">
+            환산 득표수 - A: <span id="b_votes1">0</span>표 / B: <span id="b_votes2">0</span>표
+        </div>
+        <div class="score-line" style="border-top: 1px dashed #c6f6d5; padding-top: 5px;">
+            <strong>두 후보 점수 차이 (80점 만점):</strong>
+            <strong id="b_diff" style="color: #22543d;">0.000 점</strong>
+        </div>
+    </div>
+
+    <div class="log-container">
+        <div class="section-title">🕒 득표수 기록장 (Local History)</div>
+        <div id="logList">
+            </div>
+        <button class="btn btn-clear" onclick="clearLogs()">기록 전체 삭제</button>
+    </div>
+</div>
+
+<script>
+// 실시간 입력 감지 (수동 버튼 전에도 수치 변화는 보이게 함)
+document.getElementById('final_v1').addEventListener('input', updateScoresOnly);
+document.getElementById('final_v2').addEventListener('input', updateScoresOnly);
+
+let currentResult = {};
+
+// 계산만 수행 (기록은 안함)
+function updateScoresOnly() {
+    const pre_v1 = parseFloat(document.getElementById('pre_v1').value) || 0;
+    const pre_v2 = parseFloat(document.getElementById('pre_v2').value) || 0;
+    const final_v1 = parseFloat(document.getElementById('final_v1').value) || 0;
+    const final_v2 = parseFloat(document.getElementById('final_v2').value) || 0;
+
+    // 방식 A
+    const pre_max = Math.max(pre_v1, pre_v2) || 1; 
+    const final_max = Math.max(final_v1, final_v2) || 1;
+    let a_s1 = (pre_v1 / pre_max) * 32;
+    let a_s2 = (pre_v2 / pre_max) * 32;
+    if (final_v1 > 0 || final_v2 > 0) {
+        a_s1 += (final_v1 / final_max) * 48;
+        a_s2 += (final_v2 / final_max) * 48;
+    }
+    const a_diff = Math.abs(a_s1 - a_s2);
+
+    document.getElementById('a_score1').innerText = a_s1.toFixed(3);
+    document.getElementById('a_score2').innerText = a_s2.toFixed(3);
+    document.getElementById('a_diff').innerText = a_diff.toFixed(3) + " 점";
+
+    // 방식 B
+    const b_v1 = (pre_v1 * 0.4) + (final_v1 * 0.6);
+    const b_v2 = (pre_v2 * 0.4) + (final_v2 * 0.6);
+    const b_max = Math.max(b_v1, b_v2) || 1;
+    let b_s1 = 0;
+    let b_s2 = 0;
+    if (b_max > 0) {
+        b_s1 = (b_v1 / b_max) * 80;
+        b_s2 = (b_v2 / b_max) * 80;
+    }
+    const b_diff = Math.abs(b_s1 - b_s2);
+
+    document.getElementById('b_votes1').innerText = b_v1.toLocaleString(undefined, {maximumFractionDigits: 1});
+    document.getElementById('b_votes2').innerText = b_v2.toLocaleString(undefined, {maximumFractionDigits: 1});
+    document.getElementById('b_diff').innerText = b_diff.toFixed(3) + " 점";
+
+    // 기록용 데이터 임시 저장
+    currentResult = {
+        final_v1: final_v1.toLocaleString(),
+        final_v2: final_v2.toLocaleString(),
+        a_diff: a_diff.toFixed(3),
+        b_diff: b_diff.toFixed(3)
+    };
+}
+
+// 계산 및 로그에 저장
+function calculateAndLog() {
+    updateScoresOnly(); // 최신 계산값 갱신
+    
+    // 현재 시간 구하기
+    const now = new Date();
+    const timeString = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+
+    // 새 로그 객체 생성
+    const newLog = {
+        time: timeString,
+        ...currentResult
+    };
+
+    // 로컬 스토리지에서 기존 로그 가져오기
+    let logs = JSON.parse(localStorage.getItem('ostVoteLogs')) || [];
+    logs.unshift(newLog); // 최신 기록을 맨 앞에 추가
+    
+    // 최대 30개까지만 보관 (데이터가 너무 길어지는 것 방지)
+    if(logs.length > 30) logs.pop();
+
+    localStorage.setItem('ostVoteLogs', JSON.stringify(logs));
+    renderLogs();
+}
+
+// 로그 화면에 그리기
+function renderLogs() {
+    const logList = document.getElementById('logList');
+    logList.innerHTML = '';
+    let logs = JSON.parse(localStorage.getItem('ostVoteLogs')) || [];
+
+    if(logs.length === 0) {
+        logList.innerHTML = '<div style="color:#a0aec0; text-align:center; padding:10px;">아직 기록된 득표수가 없습니다.</div>';
+        return;
+    }
+
+    logs.forEach(log => {
+        const div = document.createElement('div');
+        div.className = 'log-item';
+        div.innerHTML = `
+            <div class="log-time">${log.time}</div>
+            <div style="display:flex; justify-content:space-between; margin-top:5px;">
+                <span>본선표 A: ${log.final_v1} / B: ${log.final_v2}</span>
+                <strong>A방식 점수차: <span style="color:#e53e3e">${log.a_diff}</span>점</strong>
+            </div>
+        `;
+        logList.appendChild(div);
+    });
+}
+
+// 로그 전체 삭제
+function clearLogs() {
+    if(confirm("모든 기록을 삭제하시겠습니까?")) {
+        localStorage.removeItem('ostVoteLogs');
+        renderLogs();
+    }
+}
+
+// 처음 로드될 때 실행
+window.onload = function() {
+    updateScoresOnly();
+    renderLogs();
+};
+</script>
+</body>
+</html>
